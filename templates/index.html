@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Flowchart</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='mermaid.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+    <h1>Interactive Flowchart</h1>
+    <div id="flowchart" class="flowchart" hidden="true">
+        <!-- Mermaid flowchart will be injected here -->
+    </div>
+    <form id="flowchart-form" onsubmit="updateFlowchart(event)">
+        <h2>Add Nodes</h2>
+        <div id="nodes-container">
+            <div class="node-row">
+                <input type="text" name="node-id" placeholder="Node ID">
+                <input type="text" name="node-label" placeholder="Node Label">
+                <button type="button" onclick="removeNodeRow(this)">Remove</button>
+            </div>
+        </div>
+        <button type="button" onclick="addNodeRow()">Add Node</button>
+        
+        <h2>Add Edges</h2>
+        <div id="edges-container">
+            <div class="edge-row">
+                <input type="text" name="edge-from" placeholder="From Node">
+                <input type="text" name="edge-to" placeholder="To Node">
+                <button type="button" onclick="removeEdgeRow(this)">Remove</button>
+            </div>
+        </div>
+        <button type="button" onclick="addEdgeRow()">Add Edge</button>
+        
+        <button type="submit">Update Flowchart</button>
+    </form>
+
+    <button type="button" onclick="printPageToPDF()">Export to PDF</button>
+    <button type="button" onclick="saveToJSON()">Save to JSON</button>
+    <input type="file" id="fileInput" style="display:none" onchange="loadFromJSON(event)">
+    <button type="button" onclick="document.getElementById('fileInput').click()">Load from JSON</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            mermaid.initialize({ startOnLoad: true });
+        });
+
+        async function updateFlowchart(event) {
+            event.preventDefault();
+
+            const nodes = [];
+            document.querySelectorAll('#nodes-container .node-row').forEach(row => {
+                const id = row.querySelector('input[name="node-id"]').value;
+                const label = row.querySelector('input[name="node-label"]').value;
+                if (id && label) {
+                    nodes.push({ id, label });
+                }
+            });
+
+            const edges = [];
+            document.querySelectorAll('#edges-container .edge-row').forEach(row => {
+                const from = row.querySelector('input[name="edge-from"]').value;
+                const to = row.querySelector('input[name="edge-to"]').value;
+                if (from && to) {
+                    edges.push({ from, to });
+                }
+            });
+
+            const graphDefinition = `
+                graph TD
+                ${nodes.map(node => `${node.id}["${node.label}"]`).join('\n')}
+                ${edges.map(edge => `${edge.from} --> ${edge.to}`).join('\n')}
+            `;
+
+            const flowchartContainer = document.getElementById('flowchart');
+            flowchartContainer.innerHTML = `<div class="mermaid flowchart">${graphDefinition}</div>`;
+            mermaid.contentLoaded();
+
+            // Unhide the flowchart and form
+            flowchartContainer.hidden = false;
+            document.getElementById('flowchart-form').hidden = false;
+        }
+
+        function addNodeRow() {
+            const nodesContainer = document.getElementById('nodes-container');
+            const newNodeRow = document.createElement('div');
+            newNodeRow.className = 'node-row';
+            newNodeRow.innerHTML = '<input type="text" name="node-id" placeholder="Node ID"><input type="text" name="node-label" placeholder="Node Label"><button type="button" onclick="removeNodeRow(this)">Remove</button>';
+            nodesContainer.appendChild(newNodeRow);
+        }
+
+        function addEdgeRow() {
+            const edgesContainer = document.getElementById('edges-container');
+            const newEdgeRow = document.createElement('div');
+            newEdgeRow.className = 'edge-row';
+            newEdgeRow.innerHTML = '<input type="text" name="edge-from" placeholder="From Node"><input type="text" name="edge-to" placeholder="To Node"><button type="button" onclick="removeEdgeRow(this)">Remove</button>';
+            edgesContainer.appendChild(newEdgeRow);
+        }
+
+        function removeNodeRow(button) {
+            const row = button.parentNode;
+            row.parentNode.removeChild(row);
+        }
+
+        function removeEdgeRow(button) {
+            const row = button.parentNode;
+            row.parentNode.removeChild(row);
+        }
+
+        function printPageToPDF() {
+            // Ensure the entire page is visible
+            const flowchartContainer = document.getElementById('flowchart');
+            flowchartContainer.hidden = false; // Unhide the flowchart
+            document.getElementById('flowchart-form').hidden = false; // Unhide the form
+        
+            // Use window.print() to print the entire page
+            window.print();
+        }
+        
+        
+        
+        
+        
+        
+        function saveToJSON() {
+            const nodes = [];
+            document.querySelectorAll('#nodes-container .node-row').forEach(row => {
+                const id = row.querySelector('input[name="node-id"]').value;
+                const label = row.querySelector('input[name="node-label"]').value;
+                if (id && label) {
+                    nodes.push({ id, label });
+                }
+            });
+
+            const edges = [];
+            document.querySelectorAll('#edges-container .edge-row').forEach(row => {
+                const from = row.querySelector('input[name="edge-from"]').value;
+                const to = row.querySelector('input[name="edge-to"]').value;
+                if (from && to) {
+                    edges.push({ from, to });
+                }
+            });
+
+            const jsonData = JSON.stringify({ nodes, edges });
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'flowchart.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function loadFromJSON(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const jsonData = JSON.parse(e.target.result);
+                    const nodesContainer = document.getElementById('nodes-container');
+                    const edgesContainer = document.getElementById('edges-container');
+
+                    nodesContainer.innerHTML = '';
+                    edgesContainer.innerHTML = '';
+
+                    jsonData.nodes.forEach(node => {
+                        const newNodeRow = document.createElement('div');
+                        newNodeRow.className = 'node-row';
+                        newNodeRow.innerHTML = `<input type="text" name="node-id" value="${node.id}" placeholder="Node ID"><input type="text" name="node-label" value="${node.label}" placeholder="Node Label"><button type="button" onclick="removeNodeRow(this)">Remove</button>`;
+                        nodesContainer.appendChild(newNodeRow);
+                    });
+
+                    jsonData.edges.forEach(edge => {
+                        const newEdgeRow = document.createElement('div');
+                        newEdgeRow.className = 'edge-row';
+                        newEdgeRow.innerHTML = `<input type="text" name="edge-from" value="${edge.from}" placeholder="From Node"><input type="text" name="edge-to" value="${edge.to}" placeholder="To Node"><button type="button" onclick="removeEdgeRow(this)">Remove</button>`;
+                        edgesContainer.appendChild(newEdgeRow);
+                    });
+
+                    updateFlowchart(new Event('submit'));
+                };
+                reader.readAsText(file);
+            }
+        }
+    </script>
+</body>
+</html>
