@@ -19,6 +19,12 @@
             <div class="node-row">
                 <input type="text" name="node-id" placeholder="Node ID">
                 <input type="text" name="node-label" placeholder="Node Label">
+                <select name="node-shape">
+                    <option value="rect">Rectangle</option>
+                    <option value="roundRect">Rounded Rectangle</option>
+                    <option value="circle">Circle</option>
+                    <option value="ellipse">Ellipse</option>
+                </select>
                 <button type="button" onclick="removeNodeRow(this)">Remove</button>
             </div>
         </div>
@@ -54,8 +60,9 @@
             document.querySelectorAll('#nodes-container .node-row').forEach(row => {
                 const id = row.querySelector('input[name="node-id"]').value;
                 const label = row.querySelector('input[name="node-label"]').value;
+                const shape = row.querySelector('select[name="node-shape"]').value;
                 if (id && label) {
-                    nodes.push({ id, label });
+                    nodes.push({ id, label, shape });
                 }
             });
 
@@ -70,7 +77,18 @@
 
             const graphDefinition = `
                 graph TD
-                ${nodes.map(node => `${node.id}["${node.label}"]`).join('\n')}
+                ${nodes.map(node => {
+                    switch(node.shape) {
+                        case 'circle':
+                            return `${node.id}((\"${node.label}\"))`;
+                        case 'ellipse':
+                            return `${node.id}("${node.label}")`;
+                        case 'roundRect':
+                            return `${node.id}(["${node.label}"])`;
+                        default:
+                            return `${node.id}["${node.label}"]`;
+                    }
+                }).join('\n')}
                 ${edges.map(edge => `${edge.from} --> ${edge.to}`).join('\n')}
             `;
 
@@ -87,7 +105,17 @@
             const nodesContainer = document.getElementById('nodes-container');
             const newNodeRow = document.createElement('div');
             newNodeRow.className = 'node-row';
-            newNodeRow.innerHTML = '<input type="text" name="node-id" placeholder="Node ID"><input type="text" name="node-label" placeholder="Node Label"><button type="button" onclick="removeNodeRow(this)">Remove</button>';
+            newNodeRow.innerHTML = `
+                <input type="text" name="node-id" placeholder="Node ID">
+                <input type="text" name="node-label" placeholder="Node Label">
+                <select name="node-shape">
+                    <option value="rect">Rectangle</option>
+                    <option value="roundRect">Rounded Rectangle</option>
+                    <option value="circle">Circle</option>
+                    <option value="ellipse">Ellipse</option>
+                </select>
+                <button type="button" onclick="removeNodeRow(this)">Remove</button>
+            `;
             nodesContainer.appendChild(newNodeRow);
         }
 
@@ -95,7 +123,11 @@
             const edgesContainer = document.getElementById('edges-container');
             const newEdgeRow = document.createElement('div');
             newEdgeRow.className = 'edge-row';
-            newEdgeRow.innerHTML = '<input type="text" name="edge-from" placeholder="From Node"><input type="text" name="edge-to" placeholder="To Node"><button type="button" onclick="removeEdgeRow(this)">Remove</button>';
+            newEdgeRow.innerHTML = `
+                <input type="text" name="edge-from" placeholder="From Node">
+                <input type="text" name="edge-to" placeholder="To Node">
+                <button type="button" onclick="removeEdgeRow(this)">Remove</button>
+            `;
             edgesContainer.appendChild(newEdgeRow);
         }
 
@@ -118,19 +150,15 @@
             // Use window.print() to print the entire page
             window.print();
         }
-        
-        
-        
-        
-        
-        
+
         function saveToJSON() {
             const nodes = [];
             document.querySelectorAll('#nodes-container .node-row').forEach(row => {
                 const id = row.querySelector('input[name="node-id"]').value;
                 const label = row.querySelector('input[name="node-label"]').value;
+                const shape = row.querySelector('select[name="node-shape"]').value;
                 if (id && label) {
-                    nodes.push({ id, label });
+                    nodes.push({ id, label, shape });
                 }
             });
 
@@ -168,7 +196,7 @@
                     jsonData.nodes.forEach(node => {
                         const newNodeRow = document.createElement('div');
                         newNodeRow.className = 'node-row';
-                        newNodeRow.innerHTML = `<input type="text" name="node-id" value="${node.id}" placeholder="Node ID"><input type="text" name="node-label" value="${node.label}" placeholder="Node Label"><button type="button" onclick="removeNodeRow(this)">Remove</button>`;
+                        newNodeRow.innerHTML = `<input type="text" name="node-id" value="${node.id}" placeholder="Node ID"><input type="text" name="node-label" value="${node.label}" placeholder="Node Label"><select name="node-shape"><option value="rect" ${node.shape === 'rect' ? 'selected' : ''}>Rectangle</option><option value="roundRect" ${node.shape === 'roundRect' ? 'selected' : ''}>Rounded Rectangle</option><option value="circle" ${node.shape === 'circle' ? 'selected' : ''}>Circle</option><option value="ellipse" ${node.shape === 'ellipse' ? 'selected' : ''}>Ellipse</option></select><button type="button" onclick="removeNodeRow(this)">Remove</button>`;
                         nodesContainer.appendChild(newNodeRow);
                     });
 
